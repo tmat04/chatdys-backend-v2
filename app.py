@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uvicorn
@@ -37,19 +37,40 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Get allowed origins from environment variable
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    # Split by comma and strip whitespace
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Default origins if environment variable is not set
+    allowed_origins = [
         "http://localhost:3000",
         "http://localhost:5173",
         "https://chatdys.com",
-        "https://www.chatdys.com",
-        "https://chatdys-frontend-q8fgjagpx-tmat04s-projects.vercel.app"
-    ],
+        "https://www.chatdys.com"
+    ]
+
+print(f"🌐 CORS allowed origins: {allowed_origins}")
+
+# CORS middleware with environment-based configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers"
+    ],
+    expose_headers=["*"],
 )
 
 # Security scheme
@@ -71,39 +92,38 @@ async def root():
     return {
         "message": "ChatDys Backend API",
         "status": "healthy",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "cors_origins": allowed_origins
     }
 
 @app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
-        "service": "chatdys-backend",
-        "timestamp": "2025-10-13T14:30:00Z"
+        "message": "ChatDys Backend is running",
+        "version": "1.0.0",
+        "cors_configured": True,
+        "allowed_origins": allowed_origins
+    }
+
+# CORS test endpoint
+@app.options("/{path:path}")
+async def options_handler(request: Request):
+    """Handle preflight OPTIONS requests"""
+    return {
+        "message": "CORS preflight handled",
+        "method": "OPTIONS",
+        "path": request.url.path
     }
 
 # Include routers
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user_router, prefix="/api/user", tags=["User Management"])
 app.include_router(chat_router, prefix="/api", tags=["Chat"])
 app.include_router(payment_router, prefix="/api/payments", tags=["Payments"])
 
-# Error handlers
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    return {
-        "error": True,
-        "detail": exc.detail,
-        "status_code": exc.status_code
-    }
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    return {
-        "error": True,
-        "detail": "Internal server error",
-        "status_code": 500
-    }
+# Make auth0_manager available to routes
+app.state.auth0_manager = auth0_manager
 
 if __name__ == "__main__":
     uvicorn.run(

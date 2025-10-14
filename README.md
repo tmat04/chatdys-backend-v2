@@ -254,3 +254,5 @@ The backend is designed to work seamlessly with the frontend authentication file
    - Check webhook endpoint URL in Stripe settings
 
 For more help, check the logs or create an issue in the repository.
+#   U p d a t e d   f o r   R a i l w a y   C O R S   f i x  
+ 

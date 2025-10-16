@@ -1,7 +1,13 @@
 import stripe
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from config.settings import settings
 import asyncio
+
+# Use TYPE_CHECKING to avoid runtime import issues
+if TYPE_CHECKING:
+    from stripe.checkout import Session as CheckoutSession
+    from stripe.billing_portal import Session as PortalSession
+    from stripe import Subscription, Price
 
 class StripeService:
     def __init__(self):
@@ -19,7 +25,7 @@ class StripeService:
         success_url: str,
         cancel_url: str,
         metadata: Optional[Dict[str, str]] = None
-    ) -> stripe.checkout.Session:
+    ) -> Any:  # Changed from stripe.checkout.Session to Any
         """Create a Stripe checkout session"""
         
         try:
@@ -49,7 +55,7 @@ class StripeService:
         self,
         customer_id: str,
         return_url: str
-    ) -> stripe.billing_portal.Session:
+    ) -> Any:  # Changed from stripe.billing_portal.Session to Any
         """Create a Stripe customer portal session"""
         
         try:
@@ -96,7 +102,7 @@ class StripeService:
         except stripe.error.StripeError as e:
             raise Exception(f"Stripe error: {str(e)}")
 
-    async def get_subscription(self, subscription_id: str) -> stripe.Subscription:
+    async def get_subscription(self, subscription_id: str) -> Any:  # Changed from stripe.Subscription to Any
         """Get subscription details"""
         
         try:
@@ -110,7 +116,7 @@ class StripeService:
         except stripe.error.StripeError as e:
             raise Exception(f"Stripe error: {str(e)}")
 
-    async def cancel_subscription(self, subscription_id: str) -> stripe.Subscription:
+    async def cancel_subscription(self, subscription_id: str) -> Any:  # Changed from stripe.Subscription to Any
         """Cancel a subscription"""
         
         try:
@@ -148,7 +154,7 @@ class StripeService:
         currency: str = "usd",
         interval: str = "month",
         product_name: str = "ChatDys Premium"
-    ) -> stripe.Price:
+    ) -> Any:  # Changed from stripe.Price to Any
         """Create a new price (for testing/setup)"""
         
         try:

@@ -10,6 +10,7 @@ from api.auth_routes import router as auth_router
 from api.user_routes import router as user_router
 from api.chat_routes import router as chat_router
 from api.payment_routes import router as payment_router
+from api.hubspot_routes import router as hubspot_router
 
 # Import database and auth
 from database.connection import init_db, close_db
@@ -24,6 +25,9 @@ async def lifespan(app: FastAPI):
     await init_db()
     print("✅ Database initialized")
     print("✅ ChatDys Backend started successfully")
+    print(f"🔧 Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(f"🔧 Auth0 Domain: {os.getenv('AUTH0_DOMAIN')}")
+    print(f"🔧 HubSpot Integration: {'Enabled' if os.getenv('HUBSPOT_ACCESS_TOKEN') else 'Disabled'}")
     yield
     # Shutdown
     await close_db()
@@ -93,7 +97,13 @@ async def root():
         "message": "ChatDys Backend API",
         "status": "healthy",
         "version": "1.0.0",
-        "cors_origins": allowed_origins
+        "cors_origins": allowed_origins,
+        "features": {
+            "auth0": True,
+            "hubspot": bool(os.getenv("HUBSPOT_ACCESS_TOKEN")),
+            "stripe": bool(os.getenv("STRIPE_SECRET_KEY")),
+            "openai": bool(os.getenv("OPENAI_API_KEY"))
+        }
     }
 
 @app.get("/health")
@@ -103,7 +113,8 @@ async def health_check():
         "message": "ChatDys Backend is running",
         "version": "1.0.0",
         "cors_configured": True,
-        "allowed_origins": allowed_origins
+        "allowed_origins": allowed_origins,
+        "timestamp": datetime.now().isoformat()
     }
 
 # CORS test endpoint
@@ -121,6 +132,7 @@ app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user_router, prefix="/api/user", tags=["User Management"])
 app.include_router(chat_router, prefix="/api", tags=["Chat"])
 app.include_router(payment_router, prefix="/api/payments", tags=["Payments"])
+app.include_router(hubspot_router, prefix="/api/hubspot", tags=["HubSpot CRM"])
 
 # Make auth0_manager available to routes
 app.state.auth0_manager = auth0_manager

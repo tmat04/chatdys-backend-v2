@@ -1,6 +1,7 @@
 import os
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 class Settings(BaseSettings):
     # Auth0 Configuration
@@ -38,17 +39,30 @@ class Settings(BaseSettings):
     FREE_USER_DAILY_LIMIT: int = 5
     PREMIUM_USER_DAILY_LIMIT: int = 1000
     
-    # CORS Settings
-    ALLOWED_ORIGINS: list = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://chatdys.com",
-        "https://www.chatdys.com"
-    ]
+    # CORS Settings - Can be a comma-separated string or list
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://chatdys.com,https://www.chatdys.com"
     
     # Environment
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    
+    @field_validator('ALLOWED_ORIGINS', mode='before')
+    @classmethod
+    def parse_allowed_origins(cls, v):
+        """Parse ALLOWED_ORIGINS from string or list"""
+        if isinstance(v, str):
+            # If it's a string, split by comma and strip whitespace
+            return v
+        elif isinstance(v, list):
+            # If it's already a list, join it into a string
+            return ','.join(v)
+        return v
+    
+    def get_allowed_origins_list(self) -> List[str]:
+        """Get ALLOWED_ORIGINS as a list"""
+        if isinstance(self.ALLOWED_ORIGINS, str):
+            return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(',') if origin.strip()]
+        return self.ALLOWED_ORIGINS
     
     class Config:
         env_file = ".env"

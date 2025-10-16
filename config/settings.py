@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    PORT: Optional[int] = 8000
     
     # Rate Limiting
     FREE_USER_DAILY_LIMIT: int = 5
@@ -41,6 +42,17 @@ class Settings(BaseSettings):
     
     # CORS Settings - Can be a comma-separated string or list
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://chatdys.com,https://www.chatdys.com"
+    
+    # Email/SMTP Configuration (optional)
+    SMTP_SERVER: Optional[str] = None
+    SMTP_PORT: Optional[int] = None
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    FROM_EMAIL: Optional[str] = None
+    
+    # Logging Configuration (optional)
+    LOG_LEVEL: Optional[str] = "INFO"
+    LOG_FILE: Optional[str] = None
     
     # Environment
     ENVIRONMENT: str = "development"
@@ -51,7 +63,7 @@ class Settings(BaseSettings):
     def parse_allowed_origins(cls, v):
         """Parse ALLOWED_ORIGINS from string or list"""
         if isinstance(v, str):
-            # If it's a string, split by comma and strip whitespace
+            # If it's a string, return as-is
             return v
         elif isinstance(v, list):
             # If it's already a list, join it into a string
@@ -67,6 +79,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        # Allow extra fields from environment that aren't defined in the model
+        extra = "ignore"
 
 # Create settings instance
 settings = Settings()

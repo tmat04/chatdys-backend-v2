@@ -19,6 +19,14 @@ class ProfileCompletionRequest(BaseModel):
     medications: Optional[List[str]] = None
     preferences: Optional[Dict[str, Any]] = None
 
+class UpdateProfileRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    location: Optional[str] = None
+    age: Optional[int] = None
+    how_heard_about_us: Optional[str] = None
+
 class UserPreferencesRequest(BaseModel):
     preferences: Dict[str, Any]
     notification_settings: Optional[Dict[str, Any]] = None
@@ -113,6 +121,38 @@ async def get_user_profile(
     current_user: User = Depends(get_current_user_from_db)
 ):
     """Get detailed user profile"""
+    return current_user.to_dict()
+
+@router.put("/profile")
+async def update_user_profile(
+    profile_data: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user_from_db),
+    db: Session = Depends(get_db)
+):
+    """Update user profile information"""
+    
+    # Update profile fields if provided
+    if profile_data.first_name is not None:
+        current_user.first_name = profile_data.first_name
+    
+    if profile_data.last_name is not None:
+        current_user.last_name = profile_data.last_name
+    
+    if profile_data.phone_number is not None:
+        current_user.phone_number = profile_data.phone_number
+    
+    if profile_data.location is not None:
+        current_user.location = profile_data.location
+    
+    if profile_data.age is not None:
+        current_user.age = profile_data.age
+    
+    if profile_data.how_heard_about_us is not None:
+        current_user.how_heard_about_us = profile_data.how_heard_about_us
+    
+    db.commit()
+    db.refresh(current_user)
+    
     return current_user.to_dict()
 
 @router.post("/increment-question")

@@ -20,13 +20,21 @@ class User(Base):
     nickname = Column(String, nullable=True)
     picture = Column(String, nullable=True)
     
+    # Additional profile information
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    how_heard_about_us = Column(String, nullable=True)
+    
     # Profile completion
     profile_completed = Column(Boolean, default=False)
     onboarding_completed = Column(Boolean, default=False)
     
     # Health information (for profile completion)
     age = Column(Integer, nullable=True)
-    conditions = Column(JSON, nullable=True)  # List of conditions
+    conditions = Column(JSON, nullable=True)  # List of conditions (legacy)
+    health_conditions = Column(JSON, nullable=True)  # List of health conditions (new)
     symptoms = Column(JSON, nullable=True)   # List of symptoms
     medications = Column(JSON, nullable=True) # List of medications
     
@@ -79,12 +87,19 @@ class User(Base):
             "family_name": self.family_name,
             "nickname": self.nickname,
             "picture": self.picture,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "phone_number": self.phone_number,
+            "location": self.location,
+            "how_heard_about_us": self.how_heard_about_us,
             "profile_completed": self.profile_completed,
             "onboarding_completed": self.onboarding_completed,
             "age": self.age,
             "conditions": self.conditions,
+            "health_conditions": self.health_conditions,
             "symptoms": self.symptoms,
             "medications": self.medications,
+            "total_questions": self.question_count,  # Alias for compatibility
             "question_count": self.question_count,
             "daily_question_count": self.daily_question_count,
             "last_question_date": self.last_question_date.isoformat() if self.last_question_date else None,

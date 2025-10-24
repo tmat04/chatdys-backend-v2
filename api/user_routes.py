@@ -34,17 +34,17 @@ class UserPreferencesRequest(BaseModel):
 class UserSessionResponse(BaseModel):
     id: str
     email: str
-    name: Optional[str]
-    given_name: Optional[str]
-    picture: Optional[str]
-    profile_completed: bool
-    onboarding_completed: bool
-    question_count: int
-    daily_question_count: int
-    is_premium: bool
-    subscription_status: str
-    preferences: Dict[str, Any]
-    created_at: Optional[str]
+    name: Optional[str] = None
+    given_name: Optional[str] = None
+    picture: Optional[str] = None
+    profile_completed: bool = False
+    onboarding_completed: bool = False
+    question_count: int = 0
+    daily_question_count: int = 0
+    is_premium: bool = False
+    subscription_status: str = "free"
+    preferences: Dict[str, Any] = {}
+    created_at: Optional[str] = None
 
 # Dependency to get current user from database
 async def get_current_user_from_db(
@@ -114,7 +114,18 @@ async def get_user_session(
     current_user: User = Depends(get_current_user_from_db)
 ):
     """Get current user session data"""
-    return UserSessionResponse(**current_user.to_session_dict())
+    session_dict = current_user.to_session_dict()
+    
+    # Ensure all required fields have default values
+    session_dict.setdefault("profile_completed", False)
+    session_dict.setdefault("onboarding_completed", False)
+    session_dict.setdefault("question_count", 0)
+    session_dict.setdefault("daily_question_count", 0)
+    session_dict.setdefault("is_premium", False)
+    session_dict.setdefault("subscription_status", "free")
+    session_dict.setdefault("preferences", {})
+    
+    return UserSessionResponse(**session_dict)
 
 @router.get("/profile")
 async def get_user_profile(

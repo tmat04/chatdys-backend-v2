@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 from datetime import datetime, date
 from pydantic import BaseModel, EmailStr
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
 
 from database.connection import get_db
 from models.user import User
@@ -114,25 +118,44 @@ async def get_user_session(
     current_user: User = Depends(get_current_user_from_db)
 ):
     """Get current user session data"""
-    session_dict = current_user.to_session_dict()
-    
-    # Ensure all required fields have default values
-    session_dict.setdefault("profile_completed", False)
-    session_dict.setdefault("onboarding_completed", False)
-    session_dict.setdefault("question_count", 0)
-    session_dict.setdefault("daily_question_count", 0)
-    session_dict.setdefault("is_premium", False)
-    session_dict.setdefault("subscription_status", "free")
-    session_dict.setdefault("preferences", {})
-    
-    return UserSessionResponse(**session_dict)
+    try:
+        logger.info(f"Getting session for user: {current_user.email}")
+        session_dict = current_user.to_session_dict()
+        logger.info(f"Session dict from to_session_dict: {session_dict}")
+        
+        # Ensure all required fields have default values
+        session_dict.setdefault("profile_completed", False)
+        session_dict.setdefault("onboarding_completed", False)
+        session_dict.setdefault("question_count", 0)
+        session_dict.setdefault("daily_question_count", 0)
+        session_dict.setdefault("is_premium", False)
+        session_dict.setdefault("subscription_status", "free")
+        session_dict.setdefault("preferences", {})
+        
+        logger.info(f"Session dict after defaults: {session_dict}")
+        
+        result = UserSessionResponse(**session_dict)
+        logger.info(f"Successfully created UserSessionResponse")
+        return result
+    except Exception as e:
+        logger.error(f"ERROR in get_user_session: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 @router.get("/profile")
 async def get_user_profile(
     current_user: User = Depends(get_current_user_from_db)
 ):
     """Get detailed user profile"""
-    return current_user.to_dict()
+    try:
+        logger.info(f"Getting profile for user: {current_user.email}")
+        profile_dict = current_user.to_dict()
+        logger.info(f"Profile dict: {profile_dict}")
+        return profile_dict
+    except Exception as e:
+        logger.error(f"ERROR in get_user_profile: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 @router.put("/profile")
 async def update_user_profile(

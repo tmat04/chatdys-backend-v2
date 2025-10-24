@@ -1,7 +1,7 @@
 import jwt
 import requests
 from typing import Dict, Optional
-from fastapi import HTTPException
+from fastapi import HTTPException, Header, Depends
 from config.settings import settings
 import time
 from functools import lru_cache
@@ -153,6 +153,38 @@ class Auth0Manager:
         if sub.startswith("auth0|"):
             return sub[6:]
         return sub
+    
+    async def get_current_user(self, authorization: str = Header(None)) -> Dict:
+        """FastAPI dependency to extract and validate token from Authorization header"""
+        print(f"\n=== get_current_user called ===")
+        print(f"Authorization header: {authorization[:50] if authorization else 'None'}...")
+        
+        if not authorization:
+            print(f"!!! ERROR: Authorization header missing")
+            raise HTTPException(
+                status_code=401,
+                detail="Authorization header missing"
+            )
+        
+        # Extract token from "Bearer <token>" format
+        parts = authorization.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            print(f"!!! ERROR: Invalid authorization header format")
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authorization header format. Expected 'Bearer <token>'"
+            )
+        
+        token = parts[1]
+        print(f"Token extracted, validating...")
+        
+        try:
+            user_info = await self.validate_token(token)
+            print(f"✅ Token validated successfully for user: {user_info.get('email')}")
+            return user_info
+        except Exception as e:
+            print(f"!!! ERROR validating token: {str(e)}")
+            raise
 
 # Create global instance
 auth0_manager = Auth0Manager()

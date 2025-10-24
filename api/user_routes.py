@@ -52,7 +52,7 @@ class UserSessionResponse(BaseModel):
 
 # Dependency to get current user from database
 async def get_current_user_from_db(
-    token_user: Dict = Depends(auth0_manager.validate_token),
+    token_user: Dict = Depends(auth0_manager.get_current_user),
     db: Session = Depends(get_db)
 ) -> User:
     """Get current user from database, create if doesn't exist"""

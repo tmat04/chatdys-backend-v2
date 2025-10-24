@@ -113,15 +113,17 @@ async def get_current_user_from_db(
     
     return user
 
-@router.get("/session", response_model=UserSessionResponse)
+@router.get("/session")  # REMOVED response_model temporarily for debugging
 async def get_user_session(
     current_user: User = Depends(get_current_user_from_db)
 ):
     """Get current user session data"""
     try:
-        logger.info(f"Getting session for user: {current_user.email}")
+        print(f"\n=== GET /api/user/session called ===")
+        print(f"User email: {current_user.email}")
+        
         session_dict = current_user.to_session_dict()
-        logger.info(f"Session dict from to_session_dict: {session_dict}")
+        print(f"Session dict from to_session_dict: {session_dict}")
         
         # Ensure all required fields have default values
         session_dict.setdefault("profile_completed", False)
@@ -132,14 +134,14 @@ async def get_user_session(
         session_dict.setdefault("subscription_status", "free")
         session_dict.setdefault("preferences", {})
         
-        logger.info(f"Session dict after defaults: {session_dict}")
+        print(f"Session dict after defaults: {session_dict}")
+        print(f"=== Returning session dict ===")
         
-        result = UserSessionResponse(**session_dict)
-        logger.info(f"Successfully created UserSessionResponse")
-        return result
+        # Return raw dict instead of Pydantic model
+        return session_dict
     except Exception as e:
-        logger.error(f"ERROR in get_user_session: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        print(f"\n!!! ERROR in get_user_session: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise
 
 @router.get("/profile")

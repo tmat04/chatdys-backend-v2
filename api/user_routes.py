@@ -57,60 +57,83 @@ async def get_current_user_from_db(
 ) -> User:
     """Get current user from database, create if doesn't exist"""
     
+    print(f"\n=== get_current_user_from_db called ===")
+    print(f"Token user: {token_user}")
+    
     auth0_sub = token_user.get("sub")
     if not auth0_sub:
+        print(f"!!! ERROR: Missing sub claim in token")
         raise HTTPException(
             status_code=400,
             detail="Invalid token: missing sub claim"
         )
     
+    print(f"Auth0 sub: {auth0_sub}")
+    
     # Extract clean user ID
     user_id = auth0_manager.extract_user_id(token_user)
+    print(f"User ID: {user_id}")
     
     # Try to find existing user
+    print(f"Querying database for user...")
     user = db.query(User).filter(User.auth0_sub == auth0_sub).first()
+    print(f"User found: {user is not None}")
     
     if not user:
+        print(f"Creating new user...")
         # Create new user
-        user = User(
-            id=user_id,
-            auth0_sub=auth0_sub,
-            email=token_user.get("email"),
-            email_verified=token_user.get("email_verified", False),
-            name=token_user.get("name"),
-            given_name=token_user.get("given_name"),
-            family_name=token_user.get("family_name"),
-            nickname=token_user.get("nickname"),
-            picture=token_user.get("picture"),
-            first_login=datetime.now(),
-            last_login=datetime.now(),
-            login_count=1
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
-        print(f"✅ Created new user: {user.email}")
+        try:
+            user = User(
+                id=user_id,
+                auth0_sub=auth0_sub,
+                email=token_user.get("email"),
+                email_verified=token_user.get("email_verified", False),
+                name=token_user.get("name"),
+                given_name=token_user.get("given_name"),
+                family_name=token_user.get("family_name"),
+                nickname=token_user.get("nickname"),
+                picture=token_user.get("picture"),
+                first_login=datetime.now(),
+                last_login=datetime.now(),
+                login_count=1
+            )
+            print(f"User object created, adding to database...")
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print(f"✅ Created new user: {user.email}")
+        except Exception as e:
+            print(f"!!! ERROR creating user: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
     else:
-        # Update login info
-        user.last_login = datetime.now()
-        user.login_count += 1
-        
-        # Update profile info from token if changed
-        user.email = token_user.get("email", user.email)
-        user.email_verified = token_user.get("email_verified", user.email_verified)
-        user.name = token_user.get("name", user.name)
-        user.given_name = token_user.get("given_name", user.given_name)
-        user.family_name = token_user.get("family_name", user.family_name)
-        user.nickname = token_user.get("nickname", user.nickname)
-        user.picture = token_user.get("picture", user.picture)
-        
-        # Reset daily count if needed
-        user.reset_daily_count_if_needed()
-        
-        db.commit()
-        db.refresh(user)
+        print(f"Updating existing user...")
+        try:
+            # Update login info
+            user.last_login = datetime.now()
+            user.login_count += 1
+            
+            # Update profile info from token if changed
+            user.email = token_user.get("email", user.email)
+            user.email_verified = token_user.get("email_verified", user.email_verified)
+            user.name = token_user.get("name", user.name)
+            user.given_name = token_user.get("given_name", user.given_name)
+            user.family_name = token_user.get("family_name", user.family_name)
+            user.nickname = token_user.get("nickname", user.nickname)
+            user.picture = token_user.get("picture", user.picture)
+            
+            # Reset daily count if needed
+            user.reset_daily_count_if_needed()
+            
+            db.commit()
+            db.refresh(user)
+            print(f"✅ Updated user: {user.email}")
+        except Exception as e:
+            print(f"!!! ERROR updating user: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
     
+    print(f"=== Returning user object ===")
     return user
 
 @router.get("/session")  # REMOVED response_model temporarily for debugging
